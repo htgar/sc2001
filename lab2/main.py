@@ -2,7 +2,7 @@ import random
 import time
 import heapq
 import csv
-
+import sys
 
 def generate_graph_adj_matrix(n, edge_prob=0.3, seed=42):
     random.seed(seed)
@@ -29,6 +29,17 @@ def generate_graph_adj_list(n, edge_prob=0.3, seed=42):
                 adj[j].append((i, w))
     return adj
 
+def connected(n, adj) -> bool:
+    visited = [False] * n
+
+    def dfs(u):
+        visited[u] = True
+        for v, _ in adj[u]:
+            if not visited[v]:
+                dfs(v)
+
+    dfs(0)
+    return all(visited)
 
 def dijkstra_array(matrix, start):
     n = len(matrix)
@@ -77,36 +88,46 @@ def count_edges(adj):
 
 
 if __name__ == "__main__":
-    sizes = [10, 50, 100, 200, 500, 1000]
-    edge_prob = 0.3
+    sizes = [100, 200, 500, 1000, 2000, 5000, 10000]
+
+    sys.setrecursionlimit(100000)
 
     results = []
-    print(f"{'V':>5} {'E':>8} {'Array (s)':>12} {'Heap (s)':>12}")
+    print(f"{'V':>5} {'E':>8} {'Density':>8} {'Array (s)':>12} {'Heap (s)':>12}")
     print("-" * 40)
 
     for n in sizes:
-        matrix = generate_graph_adj_matrix(n, edge_prob, seed=n)
-        adj = generate_graph_adj_list(n, edge_prob, seed=n)
-        e = count_edges(adj)
+        edge_prob = [0.1, 0.3, 0.5, 0.7, 0.9]
+        for p in edge_prob:
+            matrix = []
+            adj = []
+            for seed in range(10000):
+                adj[:] = generate_graph_adj_list(n, p, seed)
+                if not connected(n, adj):
+                    continue
+                matrix[:] = generate_graph_adj_matrix(n, p, seed)
+                break
 
-        iters = 100 if n <= 100 else 20 if n <= 500 else 5
+            e = count_edges(adj)
 
-        t0 = time.time()
-        for i in range(iters):
-            dijkstra_array(matrix, 0)
-        t_array = (time.time() - t0) / iters
+            iters = 100 if n <= 500 else 20 if n <= 2000 else 5
 
-        t0 = time.time()
-        for i in range(iters):
-            dijkstra_heap(adj, 0)
-        t_heap = (time.time() - t0) / iters
+            t0 = time.time()
+            for i in range(iters):
+                dijkstra_array(matrix, 0)
+            t_array = (time.time() - t0) / iters
 
-        results.append((n, e, t_array, t_heap))
-        print(f"{n:>5} {e:>8} {t_array:>12.6f} {t_heap:>12.6f}")
+            t0 = time.time()
+            for i in range(iters):
+                dijkstra_heap(adj, 0)
+            t_heap = (time.time() - t0) / iters
+
+            results.append((n, e, p, t_array, t_heap))
+            print(f"{n:>5} {e:>8} {p:>8.1f} {t_array:>12.6f} {t_heap:>12.6f}")
 
     with open("results.csv", "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["V", "E", "Array_Time", "Heap_Time"])
+        writer.writerow(["V", "E", "Density", "Array_Time", "Heap_Time"])
         writer.writerows(results)
 
     print("\n(a) Adjacency Matrix + Array PQ: O(V^2)")

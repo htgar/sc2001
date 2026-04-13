@@ -1,0 +1,40 @@
+# SC2001/lab1/graphs/d_hybrid_vs_merge.py
+import pandas as pd
+import matplotlib.pyplot as plt 
+import numpy as np 
+
+# Load data and assign column name 
+hybrid_data = pd.read_csv("lab1/hybrid.csv", header = None, names = ["n", "s", "time", "comparisons"])
+merge_data = pd.read_csv("lab1/merge.csv", header = None, names = ["n", "time", "comparisons"])
+
+# Define optimal S -- from part (cii)
+S_optimal = 16 
+
+# Define target N -- 10 million
+N_target = 10_000_000
+
+# Filter rows in datasets -> N = 10 million only 
+target_hybrid_data = hybrid_data[(hybrid_data["n"] == N_target) & (hybrid_data["s"] == S_optimal)]
+target_merge_data = merge_data[merge_data["n"] == N_target]
+
+target_hybrid = target_hybrid_data.iloc[0]
+target_merge = target_merge_data.iloc[0]
+
+# Output Respective Runtime and Key comparison
+print(f"Merge Sort - Run Time: {target_merge["time"]:.3f}s")
+print(f"Merge Sort - Comparisons: {int(target_merge["comparisons"])}")
+
+
+print(f"Hybrid Sort (S = {S_optimal}) - Run Time: {target_hybrid["time"]:.3f}s")
+print(f"Hybrid Sort (S = {S_optimal}) - Comparisons: {int(target_hybrid["comparisons"])}")
+
+# Tabulate improvements
+runtime_improve = target_merge["time"] - target_hybrid["time"]
+runtime_improve_p = (runtime_improve/target_merge["time"])*100
+
+kc_improve = target_merge["comparisons"] - target_hybrid["comparisons"]
+kc_improve_p = (kc_improve/target_merge["comparisons"])*100
+
+# Output improvements
+print(f" Improvements in Runtime - {runtime_improve:.3f}s, ({runtime_improve_p:1f}%)")
+print(f" Improvements in Key Comparisons - {kc_improve:.3f}s, ({kc_improve_p:1f}%)")
